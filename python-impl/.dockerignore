@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.eggs/
+
+# Virtualenv
+venv/
+.venv/
+
+# Environment (使用 docker-compose env_file 或 -e 注入)
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Vector store (通过 volume 挂载)
+vector_store/chroma/
+
+# Conversations (通过 volume 挂载)
+conversations/
+
+# OS
+.DS_Store
+Thumbs.db

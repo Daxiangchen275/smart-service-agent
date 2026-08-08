@@ -1,0 +1,62 @@
+# ============================================================
+# 智能客服多 Agent 系统 - Docker Compose 编排
+# 启动: docker-compose up -d
+# 查看日志: docker-compose logs -f app
+# 初始化数据库: docker-compose exec mysql mysql -u root -p smart_service < /docker-entrypoint-initdb.d/01_init.sql
+# ============================================================
+
+services:
+  app:
+    build: .
+    container_name: smart-service-agent
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - STM_MD_DIR=/app/conversations
+      - CHROMA_PERSIST_DIR=/app/vector_store/chroma
+      - CHECKPOINT_DB_PATH=/app/checkpoints/checkpoints.db
+    volumes:
+      - chroma_data:/app/vector_store/chroma
+      - conversations_data:/app/conversations
+      - knowledge_base_data:/app/knowledge_base
+      - checkpoint_data:/app/checkpoints
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  mysql:
+    image: mysql:8.0
+    container_name: smart-service-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-smart_service_2024}
+      MYSQL_DATABASE: smart_service
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init_mysql.sql:/docker-entrypoint-initdb.d/01_init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD:-smart_service_2024}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  chroma_data:
+  conversations_data:
+  knowledge_base_data:
+  checkpoint_data:
+  mysql_data:
