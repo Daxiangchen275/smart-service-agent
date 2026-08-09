@@ -92,8 +92,8 @@ class Settings(BaseSettings):
     )
 
     # ── RAG 检索参数 ──
-    rag_top_k: int = Field(default=12, ge=1, le=50, description="向量召回候选数")
-    rag_top_n: int = Field(default=5, ge=1, le=20, description="重排后保留数")
+    rag_top_k: int = Field(default=5, ge=1, le=50, description="向量召回候选数")
+    rag_top_n: int = Field(default=3, ge=1, le=20, description="重排后保留数")
     rag_chunk_size: int = Field(default=500, ge=50, le=4000, description="文档分块大小")
     rag_chunk_overlap: int = Field(default=80, ge=0, le=1000, description="分块重叠字符数")
 

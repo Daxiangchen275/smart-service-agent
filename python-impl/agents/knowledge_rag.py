@@ -104,7 +104,7 @@ class KnowledgeRAGAgent:
         """向量召回 + Cross-Encoder 重排，直接使用 ChromaKnowledgeStore。"""
         try:
             t0 = _time.perf_counter()
-            docs = await self._knowledge_store.search_and_rerank(query, top_k=12, top_n=5)
+            docs = await self._knowledge_store.search_and_rerank(query, top_k=5, top_n=3)
             search_ms = (_time.perf_counter() - t0) * 1000
 
             collector.record_rag_search(search_ms, len(docs))
