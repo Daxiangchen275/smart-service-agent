@@ -24,15 +24,13 @@ class _Bucket:
 
     def stats(self) -> dict[str, float]:
         if not self.values:
-            return {"count": 0, "avg": 0, "p50": 0, "p95": 0, "p99": 0}
+            return {"count": 0, "p50": 0, "p95": 0}
         sorted_vals = sorted(self.values)
         n = len(sorted_vals)
         return {
             "count": n,
-            "avg": round(sum(sorted_vals) / n, 1),
             "p50": round(sorted_vals[int(n * 0.50)], 1),
             "p95": round(sorted_vals[int(n * 0.95)], 1),
-            "p99": round(sorted_vals[min(int(n * 0.99), n - 1)], 1),
         }
 
 

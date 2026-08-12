@@ -451,6 +451,7 @@ async def chat_stream(request: ChatRequest):
             return isinstance(sr, dict) and key in sr
 
         try:
+            assert graph is not None, "Graph not initialized"
             _pipeline_start = time.perf_counter()
             async for event in graph.astream_events(
                 initial_state,
@@ -768,20 +769,20 @@ def build_chat_models(settings):
         - streaming_llm: streaming=True，用于 SSE 流式输出（用户可见的回复生成）
         - internal_llm:  streaming=False，用于内部 LLM 调用，确保 token 统计准确
     """
-    _common = dict(
+    _common: dict[str, Any] = dict(
         model=settings.llm_model,
         api_key=settings.llm_api_key,
         base_url=resolve_llm_base_url(),
         temperature=settings.llm_temperature,
         max_tokens=settings.llm_max_tokens,  # type: ignore[call-arg]
     )
-    streaming_llm = ChatOpenAI(
+    streaming_llm = ChatOpenAI(  # type: ignore
         **_common,
         streaming=True,        # SSE astream_events 的 on_chat_model_stream 依赖此选项
         stream_usage=True,     # 流式模式下也尝试获取 token_usage
         callbacks=[TokenCallbackHandler()],
     )
-    internal_llm = ChatOpenAI(
+    internal_llm = ChatOpenAI(  # type: ignore
         **_common,
         streaming=False,       # 非流式：DeepSeek API 天然返回 usage，token 监控准确
         callbacks=[TokenCallbackHandler()],
