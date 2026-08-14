@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug pytest: test_supervisor",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests/test_supervisor.py::test_handoff_preserves_existing_sub_results",
+                "-v",
+                "-s"
+            ],
+            "cwd": "${workspaceFolder}/python-impl",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Debug 当前 Python 文件",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}/python-impl",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}

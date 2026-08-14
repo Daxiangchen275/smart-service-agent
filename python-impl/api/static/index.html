@@ -1285,7 +1285,6 @@ function updateChatInfo(data) {
     compEl.textContent = data.compliance_passed ? '通过' : '转人工';
     compEl.style.color = data.compliance_passed ? 'var(--success)' : 'var(--danger)';
   }
-  setInfo('info-tools', (data.tool_calls || []).length);
 }
 
 function setInfo(id, value) {

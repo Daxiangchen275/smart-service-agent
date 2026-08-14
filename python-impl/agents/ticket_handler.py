@@ -134,7 +134,6 @@ class TicketHandlerAgent:
     async def process(self, state: dict[str, Any]) -> dict[str, Any]:
         messages = state.get("messages", [])
         user_id  = state.get("user_id", self._user_id)
-        tool_calls = state.get("tool_calls", [])
         self._user_id = user_id
 
         if not messages:
@@ -142,26 +141,21 @@ class TicketHandlerAgent:
 
         user_text = self._extract_text(messages[-1])
 
-        # 1. 优先消费 IntentRouter 规划的工具
-        ticket_results = await self._execute_planned_tools(tool_calls)
+        analysis = await self._analyze(user_text)
+        # 从 IntentRouter 实体中提取 order_id / ticket_id，供按订单查工单 / 去重使用
+        # 实体为空时正则从 user_text 兜底提取
+        import re
+        intent_entities = state.get("intent_result", {}).get("entities", {})
+        order_id = intent_entities.get("order_id", "")
+        if not order_id:
+            om = re.search(r'ORD-\d{8}-[A-Z0-9]{3,6}', user_text)
+            if om:
+                order_id = om.group(0)
+        # 优先使用 IntentRouter 上下文改写后提取的 ticket_id（处理"到哪一步了"类追问）
+        ticket_id_from_intent = intent_entities.get("ticket_id", "")
+        ticket_results = await self._dispatch(analysis, user_id, user_text, order_id, ticket_id_from_intent)
 
-        # 2. 无预规划 → LLM 自主分析 + 执行
-        if not ticket_results:
-            analysis = await self._analyze(user_text)
-            # 从 IntentRouter 实体中提取 order_id / ticket_id，供按订单查工单 / 去重使用
-            # 实体为空时正则从 user_text 兜底提取
-            import re
-            intent_entities = state.get("intent_result", {}).get("entities", {})
-            order_id = intent_entities.get("order_id", "")
-            if not order_id:
-                om = re.search(r'ORD-\d{8}-[A-Z0-9]{3,6}', user_text)
-                if om:
-                    order_id = om.group(0)
-            # 优先使用 IntentRouter 上下文改写后提取的 ticket_id（处理"到哪一步了"类追问）
-            ticket_id_from_intent = intent_entities.get("ticket_id", "")
-            ticket_results = await self._dispatch(analysis, user_id, user_text, order_id, ticket_id_from_intent)
-
-        # 3. LLM 润色回复
+        # LLM 润色回复
         answer = await self._generate_response(user_text, ticket_results)
 
         existing_sub = state.get("sub_results", {})
@@ -177,19 +171,7 @@ class TicketHandlerAgent:
             "current_agent": "ticket_handler",
         }
 
-    # ── 1. 消费预规划工具 ──
-
-    async def _execute_planned_tools(self, tool_calls: list[dict]) -> list[dict]:
-        """执行 IntentRouter 规划的工单工具。"""
-        results: list[dict] = []
-        for tc in tool_calls:
-            name = tc.get("name", "")
-            if name not in self._TICKET_TOOLS:
-                continue
-            results.append(await self._call_tool(name, tc.get("arguments", {})))
-        return results
-
-    # ── 2. LLM 分析 ──
+    # ── LLM 分析 ──
 
     async def _analyze(self, user_text: str) -> TicketAnalysis:
         """LLM 分析用户消息 → TicketAnalysis。"""

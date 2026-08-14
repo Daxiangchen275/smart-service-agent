@@ -119,13 +119,7 @@ _FALLBACK_FORMATTERS: dict[str, Callable[[dict], str]] = {
 # ── Agent ──
 
 class ToolExecutorAgent:
-    """工具执行 Agent：批量调用 Skill 工具，将 JSON 结果转为自然语言回复。
-
-    职责：
-    - 消费 IntentRouter 规划的 tool_calls
-    - 通过 skill_runtime 从 SKILL.MD 解析工具 → 子进程执行脚本
-    - 将结构化结果转为用户可读的自然语言
-    """
+    """工具执行 Agent：通过 SKILL.md 自主规划工具调用，批量执行后将结果转为自然语言回复。"""
 
     # 支持的工具名集合
     SUPPORTED_TOOLS = {"order_query", "user_profile", "risk_check", "ticket_update"}
@@ -138,9 +132,8 @@ class ToolExecutorAgent:
 
     @trace_agent_call("ToolExecutor")
     async def process(self, state: dict[str, Any]) -> dict[str, Any]:
-        """LangGraph 节点入口：消费 tool_calls 或自主规划工具调用，生成回复。"""
+        """LangGraph 节点入口：自主规划工具调用并生成回复。"""
         messages = state.get("messages", [])
-        tool_calls = state.get("tool_calls", [])
         user_id = state.get("user_id", "user-1001")
 
         if not messages:
@@ -148,11 +141,10 @@ class ToolExecutorAgent:
 
         user_text = self._extract_text(messages[-1])
 
-        # 1. 无预规划 → 自主分析用户消息，匹配工具
-        if not tool_calls:
-            intent_result = state.get("intent_result", {})
-            entities = intent_result.get("entities", {})
-            tool_calls = self._plan_tools(user_text, user_id, entities)
+        # 1. 自主分析用户消息，匹配工具
+        intent_result = state.get("intent_result", {})
+        entities = intent_result.get("entities", {})
+        tool_calls = self._plan_tools(user_text, user_id, entities)
 
         # 2. 批量调用 Skill 工具
         tool_results = await self.run_tools(tool_calls)
@@ -177,9 +169,6 @@ class ToolExecutorAgent:
 
     async def run_tools(self, tool_calls: list[dict]) -> list[dict[str, Any]]:
         """批量串行执行工具（skill_runtime 子进程调用）。
-
-        Args:
-            tool_calls: IntentRouter 规划的 [{name, arguments}, ...]
 
         Returns:
             [{"tool": str, "success": bool, "result": Any, "error": str|None, "duration_ms": float}, ...]

@@ -182,7 +182,6 @@ class IntentRouterAgent:
                 "entities": intent_result.entities,
                 "suggested_agent": intent_result.suggested_agent,
             },
-            "tool_calls": [],  # 不再由 IntentRouter 规划，下游 Agent 自行决策
             "sub_results": {
                 **existing_sub,
                 "intent_router": {
@@ -460,7 +459,6 @@ class IntentRouterAgent:
         return {
             "intent": "human_handoff",
             "intent_result": {},
-            "tool_calls": [],
             "sub_results": {},
             "current_agent": "intent_router",
         }

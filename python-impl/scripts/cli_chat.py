@@ -189,7 +189,6 @@ def chat_block(client: httpx.Client, url: str, message: str,
     # ── 打印各模块日志 ──
 
     intent_result = data.get("intent_result", {})
-    tool_calls = data.get("tool_calls", [])
     sub_results = data.get("sub_results", data.get("intent_result", {}))
     compliance = data.get("compliance_passed", True)
     reply = data.get("response", "(无回复)")

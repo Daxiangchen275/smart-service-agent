@@ -1,3 +1,4 @@
+# python-impl\api\main.py
 # ============================================================
 # FastAPI 服务入口 — 智能客服多 Agent 系统
 # ============================================================
@@ -254,8 +255,6 @@ class ChatResponse(BaseModel):
     intent: str
     intent_result: dict
     sub_results: dict
-    tool_calls: list
-    tool_results: dict
     compliance_passed: bool
 
 
@@ -337,8 +336,6 @@ async def chat(request: ChatRequest):
         "session_id": session_id,
         "intent": "",
         "intent_result": {},
-        "tool_calls": [],
-        "tool_results": {},
         "sub_results": {},
         "compliance_passed": True,
         "final_response": "",
@@ -373,8 +370,6 @@ async def chat(request: ChatRequest):
         intent=result.get("intent", ""),
         intent_result=result.get("intent_result", {}),
         sub_results=result.get("sub_results", {}),
-        tool_calls=result.get("tool_calls", []),
-        tool_results=result.get("tool_results", {}),
         compliance_passed=result.get("compliance_passed", True),
     )
 
@@ -421,8 +416,6 @@ async def chat_stream(request: ChatRequest):
         "session_id": session_id,
         "intent": "",
         "intent_result": {},
-        "tool_calls": [],
-        "tool_results": {},
         "sub_results": {},
         "compliance_passed": True,
         "final_response": "",

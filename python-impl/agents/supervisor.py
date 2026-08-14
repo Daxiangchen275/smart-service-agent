@@ -28,19 +28,6 @@ from scripts.skill_runtime import SkillToolSpec
 logger = logging.getLogger(__name__)
 
 
-# ── Reducer：深度合并 sub_results，避免后节点覆盖前节点数据 ──
-
-def _merge_sub_results(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
-    """将 right 深度合并到 left 中，返回新 dict。"""
-    merged = dict(left)
-    for key, value in right.items():
-        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
-            merged[key] = {**merged[key], **value}
-        else:
-            merged[key] = value
-    return merged
-
-
 # ── AgentState 共享状态 ──
 
 class AgentState(TypedDict):
@@ -49,8 +36,6 @@ class AgentState(TypedDict):
     session_id: str
     intent: str                           # 路由目标 Agent
     intent_result: dict[str, Any]         # 意图识别详情
-    tool_calls: list[dict[str, Any]]      # 待执行的 mcp 工具列表
-    tool_results: dict[str, Any]          # 工具执行结果
     sub_results: dict[str, Any]           # 各子 Agent 输出（Agent 内部手动合并，不使用 reducer 避免跨轮累积）
     compliance_passed: bool
     final_response: str
@@ -63,7 +48,7 @@ class AgentState(TypedDict):
 def route_from_intent(state: AgentState) -> Literal["knowledge_rag", "ticket_handler", "tool_executor", "human_handoff"]:
     """根据意图路由到对应子 Agent。"""
     intent = state.get("intent", "human_handoff")
-    if intent in ("knowledge_rag", "ticket_handler", "tool_executor", "human_handoff"):
+    if intent in ("knowledge_rag", "ticket_handler", "tool_executor"):
         return intent
     # 默认走人工客服
     logger.warning("Unknown intent '%s', defaulting to human_handoff", intent)
@@ -118,7 +103,7 @@ class SupervisorNode:
     async def synthesize_response(self, state: AgentState) -> dict[str, Any]:
         """汇总子 Agent 结果，生成最终回复。"""
         sub_results = state.get("sub_results", {})
-        compliance_passed = state.get("compliance_passed", True)
+        compliance_passed = state.get("compliance_passed", False)  # 缺失时宁可误拦不漏放
         session_id = state.get("session_id", "")
         intent = state.get("intent", "")
 
